@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chatbot Integration Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .example-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .highlight {
+            background: #ffd700;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 Simple Chatbot Integration</h1>
+    <p>This page demonstrates the simplest way to add a chatbot to your website.</p>
+    
+    <div class="example-section">
+        <h2>Method 1: Auto-Initialize (Easiest)</h2>
+        <p>Just add the script tag with data attributes to your HTML:</p>
+        
+        <div class="code-block">
+&lt;script src="chatbot-widget.js" 
+        data-chatbot-api-url="http://localhost:5002"
+        data-chatbot-company-id="your_company_id"
+        data-chatbot-title="Chat with Support"
+        data-chatbot-color="#007bff"
+        data-chatbot-position="bottom-right"
+        data-chatbot-welcome="Hello! How can I help you today?"&gt;
+&lt;/script&gt;
+        </div>
+        
+        <p><strong>That's it!</strong> The chatbot will automatically appear on your page.</p>
+    </div>
+    
+    <div class="example-section">
+        <h2>Method 2: Manual Initialize (More Control)</h2>
+        <p>Include the script and initialize manually in your code:</p>
+        
+        <div class="code-block">
+&lt;script src="chatbot-widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+    // Initialize the chatbot
+    const chatbot = new ChatbotWidget('http://localhost:5002', 'your_company_id', {
+        position: 'bottom-right',
+        primaryColor: '#28a745',
+        title: 'Customer Support',
+        welcomeMessage: 'Hi! I\'m here to help you.',
+        placeholder: 'Ask me anything...',
+        showTimestamp: true,
+        enableSoundNotification: false
+    });
+&lt;/script&gt;
+        </div>
+    </div>
+    
+    <div class="example-section">
+        <h2>Configuration Options</h2>
+        <ul>
+            <li><strong>position:</strong> 'bottom-right', 'bottom-left', 'top-right', 'top-left'</li>
+            <li><strong>primaryColor:</strong> Any valid CSS color (hex, rgb, etc.)</li>
+            <li><strong>title:</strong> Title shown in the chat header</li>
+            <li><strong>placeholder:</strong> Input field placeholder text</li>
+            <li><strong>welcomeMessage:</strong> First message shown to users</li>
+            <li><strong>showTimestamp:</strong> Show/hide message timestamps</li>
+            <li><strong>enableSoundNotification:</strong> Play sound for new messages</li>
+            <li><strong>maxMessages:</strong> Maximum messages to keep in memory</li>
+        </ul>
+    </div>
+    
+    <div class="example-section">
+        <h2>Advanced Control</h2>
+        <p>You can control the chatbot programmatically:</p>
+        
+        <div class="code-block">
+// Clear all messages
+chatbot.clearMessages();
+
+// Change company (useful for multi-tenant sites)
+chatbot.setCompanyId('new_company_id');
+
+// Remove the chatbot completely
+chatbot.destroy();
+        </div>
+    </div>
+    
+    <h2>🎯 Live Demo</h2>
+    <p>The chatbot should appear in the bottom-right corner of this page!</p>
+    
+    <script src="chatbot-widget.js" 
+            data-chatbot-api-url="http://localhost:5002"
+            data-chatbot-company-id="demo_company"
+            data-chatbot-title="Demo Chat"
+            data-chatbot-color="#6f42c1"
+            data-chatbot-welcome="Welcome to our demo! Try asking me something.">
+    </script>
+</body>
+</html>

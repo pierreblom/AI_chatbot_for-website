@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .client-selector {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .client-selector select {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .client-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card h3 {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .unit {
+            color: #95a5a6;
+            font-size: 0.9rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-card h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .questions-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .questions-table h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .questions-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .question-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e0e6ed;
+            transition: background-color 0.3s ease;
+        }
+
+        .question-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .question-item:last-child {
+            border-bottom: none;
+        }
+
+        .question-text {
+            flex: 1;
+            margin-right: 15px;
+            color: #2c3e50;
+        }
+
+        .question-count {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+            margin-left: 15px;
+        }
+
+        .refresh-btn:hover {
+            background: #5a6fd8;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>🤖 Chatbot Analytics Dashboard</h1>
+            <p>Monitor client usage, popular questions, and performance metrics in real-time</p>
+        </div>
+
+        <div class="client-selector">
+            <label for="clientSelect" style="display: block; margin-bottom: 10px; font-weight: bold; color: #2c3e50;">Select Client:</label>
+            <select id="clientSelect">
+                <option value="">Loading clients...</option>
+            </select>
+            <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh</button>
+        </div>
+
+        <div id="dashboardContent">
+            <div class="loading">Loading dashboard data...</div>
+        </div>
+    </div>
+
+    <script>
+        let currentClient = '';
+        let dashboardData = null;
+
+        // Sample data for demonstration (replace with API calls)
+        const sampleData = {
+            'ChatBotGenius': {
+                total_interactions: 150,
+                unique_sessions: 45,
+                avg_response_time: 385.5,
+                avg_knowledge_used: 3.2,
+                interactions_per_day: 12.5,
+                most_asked_questions: [
+                    { question: "What are your business hours?", count: 8 },
+                    { question: "How much does your premium plan cost?", count: 6 },
+                    { question: "Do you offer customer support?", count: 5 },
+                    { question: "Can I integrate this with my website?", count: 4 },
+                    { question: "What analytics do you provide?", count: 4 },
+                    { question: "How do I train the chatbot?", count: 3 },
+                    { question: "What's included in the free plan?", count: 3 },
+                    { question: "Can I customize the chatbot appearance?", count: 2 },
+                    { question: "How secure is your platform?", count: 2 },
+                    { question: "What programming languages do you support?", count: 2 }
+                ],
+                hourly_distribution: {
+                    '0': 2, '1': 1, '2': 0, '3': 0, '4': 0, '5': 1,
+                    '6': 3, '7': 5, '8': 8, '9': 12, '10': 15, '11': 18,
+                    '12': 20, '13': 16, '14': 14, '15': 12, '16': 10, '17': 8,
+                    '18': 6, '19': 4, '20': 3, '21': 2, '22': 1, '23': 1
+                },
+                daily_usage: {
+                    '2024-01-15': 20,
+                    '2024-01-16': 18,
+                    '2024-01-17': 22,
+                    '2024-01-18': 15,
+                    '2024-01-19': 25,
+                    '2024-01-20': 19,
+                    '2024-01-21': 16
+                },
+                response_time_distribution: {
+                    min: 270,
+                    max: 540,
+                    median: 380,
+                    p95: 520
+                }
+            }
+        };
+
+        async function loadClients() {
+            try {
+                const response = await fetch('/api/analytics/clients');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load clients');
+                }
+                
+                const select = document.getElementById('clientSelect');
+                select.innerHTML = '<option value="">Select a client...</option>';
+                
+                data.clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.client_id;
+                    option.textContent = `${client.client_id} (${client.total_interactions} interactions)`;
+                    select.appendChild(option);
+                });
+
+                // Auto-select first client if available
+                if (data.clients.length > 0) {
+                    select.value = data.clients[0].client_id;
+                    currentClient = data.clients[0].client_id;
+                    loadDashboard();
+                }
+                
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                document.getElementById('dashboardContent').innerHTML = 
+                    '<div class="error">Error loading clients. Please try again.</div>';
+            }
+        }
+
+        async function loadDashboard() {
+            const clientSelect = document.getElementById('clientSelect');
+            const selectedClient = clientSelect.value;
+            
+            if (!selectedClient) {
+                document.getElementById('dashboardContent').innerHTML = 
+                    '<div class="loading">Please select a client to view analytics.</div>';
+                return;
+            }
+
+            currentClient = selectedClient;
+            document.getElementById('dashboardContent').innerHTML = 
+                '<div class="loading">Loading dashboard data...</div>';
+
+            try {
+                const response = await fetch(`/api/analytics/${selectedClient}`);
+                dashboardData = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(dashboardData.error || 'Failed to load dashboard data');
+                }
+                
+                // Fallback to sample data if no real data available
+                if (dashboardData.total_interactions === 0) {
+                    dashboardData = sampleData[selectedClient] || dashboardData;
+                }
+                
+                renderDashboard();
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('dashboardContent').innerHTML = 
+                    '<div class="error">Error loading dashboard data. Please try again.</div>';
+            }
+        }
+
+        function renderDashboard() {
+            const content = document.getElementById('dashboardContent');
+            
+            content.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Interactions</h3>
+                        <div class="value">${dashboardData.total_interactions || 0}</div>
+                        <div class="unit">messages</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unique Sessions</h3>
+                        <div class="value">${dashboardData.unique_sessions || 0}</div>
+                        <div class="unit">sessions</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Avg Response Time</h3>
+                        <div class="value">${dashboardData.avg_response_time || 0}</div>
+                        <div class="unit">ms</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Daily Usage</h3>
+                        <div class="value">${dashboardData.interactions_per_day || 0}</div>
+                        <div class="unit">messages/day</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>📊 Hourly Usage Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="hourlyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>📅 Daily Usage Trend</h3>
+                        <div class="chart-container">
+                            <canvas id="dailyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="questions-table">
+                    <h3>❓ Most Asked Questions</h3>
+                    <div class="questions-list" id="questionsList">
+                        ${renderQuestionsList()}
+                    </div>
+                </div>
+            `;
+
+            // Render charts after DOM is updated
+            setTimeout(() => {
+                renderHourlyChart();
+                renderDailyChart();
+            }, 100);
+        }
+
+        function renderQuestionsList() {
+            if (!dashboardData.most_asked_questions || dashboardData.most_asked_questions.length === 0) {
+                return '<div class="question-item"><div class="question-text">No questions data available</div></div>';
+            }
+
+            return dashboardData.most_asked_questions.map(item => `
+                <div class="question-item">
+                    <div class="question-text">${item.question}</div>
+                    <div class="question-count">${item.count}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderHourlyChart() {
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            const hourlyData = dashboardData.hourly_distribution || {};
+            
+            const hours = Array.from({length: 24}, (_, i) => i.toString());
+            const values = hours.map(hour => hourlyData[hour] || 0);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: hours.map(h => `${h}:00`),
+                    datasets: [{
+                        label: 'Messages',
+                        data: values,
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDailyChart() {
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            const dailyData = dashboardData.daily_usage || {};
+            
+            const dates = Object.keys(dailyData).sort();
+            const values = dates.map(date => dailyData[date]);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates.map(date => new Date(date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Messages',
+                        data: values,
+                        borderColor: 'rgba(118, 75, 162, 1)',
+                        backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Event listeners
+        document.getElementById('clientSelect').addEventListener('change', loadDashboard);
+
+        // Initialize dashboard
+        window.addEventListener('load', loadClients);
+    </script>
+</body>
+</html>

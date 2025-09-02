@@ -1,0 +1,44 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 5002,
+    "debug": true
+  },
+  "cors": {
+    "allowed_origins": ["*"]
+  },
+  "scraper": {
+    "max_pages": 50,
+    "timeout": 30,
+    "delay": 1,
+    "user_agent": "ChatbotAPI/1.0 (+https://example.com/bot)",
+    "allowed_domains": [],
+    "blocked_extensions": [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".zip", ".rar", ".exe", ".dmg"],
+    "max_content_length": 100000
+  },
+  "knowledge_base": {
+    "storage_path": "./data",
+    "max_entries_per_company": 1000,
+    "content_similarity_threshold": 0.8
+  },
+  "chatbot": {
+    "max_context_length": 4000,
+    "response_max_length": 500,
+    "temperature": 0.7,
+    "system_prompt": "You are a helpful company assistant. Only answer questions using the provided company information. If you don't have information about something, politely say so and suggest contacting the company directly.",
+    "fallback_message": "I don't have information about that in my knowledge base. Please contact our company directly for assistance."
+  },
+  "security": {
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 60,
+      "requests_per_hour": 1000
+    },
+    "allowed_file_types": ["html", "txt", "md"],
+    "max_request_size": "10MB"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  }
+}

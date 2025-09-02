@@ -1,0 +1,36 @@
+# Training Pipeline Requirements
+# Additional dependencies for the enhanced training pipeline
+
+# Core dependencies (if not already installed)
+Flask==3.1.1
+Flask-CORS==6.0.1
+requests==2.32.4
+beautifulsoup4==4.13.4
+lxml==6.0.0
+
+# NLP and Text Processing
+nltk==3.8.1
+textstat==0.7.4
+
+# AI/ML for embeddings
+langchain-community==0.3.19
+langchain-core>=0.3.41
+
+# Data processing
+pandas==2.2.3
+numpy==1.26.4
+
+# Optional: For better text processing
+spacy>=3.7.0
+scikit-learn>=1.5.0
+
+# Development
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+
+# Installation instructions:
+# 1. Install Ollama from https://ollama.ai/
+# 2. Pull an embedding model: ollama pull nomic-embed-text
+# 3. Start Ollama: ollama serve
+# 4. Install Python dependencies: pip install -r requirements_training.txt
+# 5. Download NLTK data (will be done automatically on first run)
