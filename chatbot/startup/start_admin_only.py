@@ -20,8 +20,9 @@ def main():
     python_cmd = venv_python if os.path.exists(venv_python) else sys.executable
     
     try:
-        # Run the admin dashboard directly (not in background)
-        subprocess.run([python_cmd, "admin_dashboard.py"])
+        # Change to the correct directory and run the admin dashboard
+        admin_dashboard_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "admin_dashboard", "admin_dashboard.py")
+        subprocess.run([python_cmd, admin_dashboard_path])
     except KeyboardInterrupt:
         print("\n🛑 Admin Dashboard stopped")
 

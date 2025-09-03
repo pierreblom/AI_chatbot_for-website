@@ -545,6 +545,7 @@ class ClientManager:
             with open(knowledge_file, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 
+                # Process all rows (no header in our CSV format)
                 for row in reader:
                     if len(row) >= 6 and row[5].lower() == 'true':  # is_active check
                         entry = self._csv_row_to_json_entry(row, client_id)
@@ -576,12 +577,33 @@ class ClientManager:
     def _csv_row_to_json_entry(self, row: List[str], client_id: str) -> Optional[Dict[str, Any]]:
         """Convert CSV row to JSON entry format"""
         try:
+            # Enhanced CSV format: [id, content, category, source, created_at, is_active, ...]
             # Basic CSV format: [id, content, category, source, created_at, is_active]
+            
             entry_id = row[0]
             content = row[1]
             category = row[2] if len(row) > 2 else 'general'
             source = row[3] if len(row) > 3 else 'unknown'
             created_at = float(row[4]) if len(row) > 4 else time.time()
+            
+            # Enhanced data (if available)
+            metadata = {}
+            if len(row) > 6:  # Enhanced format
+                metadata.update({
+                    'processed_at': row[6] if len(row) > 6 else None,
+                    'word_count': int(row[7]) if len(row) > 7 and row[7] else 0,
+                    'chunk_count': int(row[8]) if len(row) > 8 and row[8] else 1,
+                    'quality_score': float(row[9]) if len(row) > 9 and row[9] else 1.0,
+                    'complexity_level': row[10] if len(row) > 10 else 'medium',
+                    'readability_score': float(row[11]) if len(row) > 11 and row[11] else 50.0,
+                    'topics': row[12].split(',') if len(row) > 12 and row[12] else [],
+                    'sentiment': row[13] if len(row) > 13 else 'neutral',
+                    'issues': row[14].split(',') if len(row) > 14 and row[14] else [],
+                    'vector_model': row[15] if len(row) > 15 else 'none',
+                    'enhanced_processing': True
+                })
+            else:
+                metadata['enhanced_processing'] = False
             
             return {
                 'id': entry_id,
@@ -589,7 +611,7 @@ class ClientManager:
                 'content': content,
                 'source': source,
                 'category': category,
-                'metadata': {'enhanced_processing': False},
+                'metadata': metadata,
                 'created_at': created_at,
                 'updated_at': created_at
             }

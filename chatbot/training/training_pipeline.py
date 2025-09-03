@@ -606,17 +606,7 @@ class EnhancedCSVStorage:
             with open(knowledge_file, 'r', encoding='utf-8') as f:
                 reader = csv.reader(f)
                 
-                # Skip header if present
-                first_row = next(reader, None)
-                if first_row and first_row[0] == 'id':
-                    # Header row, continue reading data
-                    pass
-                else:
-                    # No header, process first row as data
-                    if first_row and len(first_row) >= 6:
-                        knowledge_entries.append(self._csv_row_to_json_entry(first_row, company_id))
-                
-                # Process remaining rows
+                # Process all rows (no header in our CSV format)
                 for row in reader:
                     if len(row) >= 6 and row[5].lower() == 'true':  # is_active check
                         entry = self._csv_row_to_json_entry(row, company_id)

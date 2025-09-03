@@ -18,10 +18,10 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # Import original chatbot modules
-from chatbot.scraper import WebScraper
-from chatbot.knowledge_base import KnowledgeBase
-from chatbot.chatbot_engine import ChatbotEngine
-from chatbot.config import Config
+from chatbot.core.scraper import WebScraper
+from chatbot.core.knowledge_base import KnowledgeBase
+from chatbot.core.chatbot_engine import ChatbotEngine
+from chatbot.core.config import Config
 
 # Import client management
 from client_management import ClientManager

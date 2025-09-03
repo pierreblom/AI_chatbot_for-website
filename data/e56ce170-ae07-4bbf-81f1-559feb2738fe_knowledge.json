@@ -1,7 +1,7 @@
 {
   "company_id": "e56ce170-ae07-4bbf-81f1-559feb2738fe",
-  "updated_at": 1756812362.064841,
-  "total_entries": 6,
+  "updated_at": 1756813511.6883972,
+  "total_entries": 11,
   "knowledge": [
     {
       "id": "604bbf86-4c6b-4084-a7c4-3ab6c8363e0b",
@@ -58,7 +58,23 @@
       "source": "admin",
       "category": "",
       "metadata": {
-        "enhanced_processing": false
+        "processed_at": "1756811434.3142881",
+        "word_count": 544,
+        "chunk_count": 2,
+        "quality_score": 1.0,
+        "complexity_level": "very_complex",
+        "readability_score": 24.03,
+        "topics": [
+          "with",
+          "chatbotgenius",
+          "chatbot",
+          "business",
+          "professional"
+        ],
+        "sentiment": "neutral",
+        "issues": [],
+        "vector_model": "nomic-embed-text",
+        "enhanced_processing": true
       },
       "created_at": 1756811434.3142881,
       "updated_at": 1756811434.3142881
@@ -70,10 +86,85 @@
       "source": "bridge_test",
       "category": "testing",
       "metadata": {
-        "enhanced_processing": false
+        "processed_at": "1756812222.479465",
+        "word_count": 23,
+        "chunk_count": 1,
+        "quality_score": 1.0,
+        "complexity_level": "complex",
+        "readability_score": 59.8,
+        "topics": [],
+        "sentiment": "neutral",
+        "issues": [],
+        "vector_model": "nomic-embed-text",
+        "enhanced_processing": true
       },
       "created_at": 1756812222.479464,
       "updated_at": 1756812222.479464
+    },
+    {
+      "id": "b6ef6f1d-63df-47fa-88bf-1f3304da9ea5",
+      "company_id": "e56ce170-ae07-4bbf-81f1-559feb2738fe",
+      "content": "Our chatbot development process typically takes 2-4 weeks depending on complexity. We start with a discovery call to understand your needs, then create a custom solution using Next.js and advanced AI technologies.",
+      "source": "development_info",
+      "category": "process",
+      "metadata": {
+        "enhanced_processing": true,
+        "quality_score": 0.9
+      },
+      "created_at": 1756813511.6859741,
+      "updated_at": 1756813511.6859741
+    },
+    {
+      "id": "4a8a1926-f2f8-44e5-9359-ce8cee3fdd2f",
+      "company_id": "e56ce170-ae07-4bbf-81f1-559feb2738fe",
+      "content": "We offer three main pricing tiers: Starter ($2,500), Professional ($5,000), and Enterprise ($10,000+). Each includes custom development, integration, and 30 days of support. Enterprise clients get ongoing maintenance.",
+      "source": "pricing_info",
+      "category": "pricing",
+      "metadata": {
+        "enhanced_processing": true,
+        "quality_score": 0.9
+      },
+      "created_at": 1756813511.686965,
+      "updated_at": 1756813511.686965
+    },
+    {
+      "id": "74131e39-149a-484e-9487-2d5c310ea729",
+      "company_id": "e56ce170-ae07-4bbf-81f1-559feb2738fe",
+      "content": "Our chatbots can integrate with popular platforms like Shopify, WordPress, Salesforce, and custom APIs. We specialize in Next.js integration for optimal performance and SEO benefits.",
+      "source": "technical_info",
+      "category": "integration",
+      "metadata": {
+        "enhanced_processing": true,
+        "quality_score": 0.9
+      },
+      "created_at": 1756813511.687467,
+      "updated_at": 1756813511.687467
+    },
+    {
+      "id": "5cd5c5c8-7602-4796-922c-e50815a66e12",
+      "company_id": "e56ce170-ae07-4bbf-81f1-559feb2738fe",
+      "content": "We serve clients across multiple industries including e-commerce, healthcare, education, real estate, and SaaS companies. Our chatbots have helped reduce support tickets by 40% and cut costs by 85%.",
+      "source": "success_stories",
+      "category": "case_studies",
+      "metadata": {
+        "enhanced_processing": true,
+        "quality_score": 0.9
+      },
+      "created_at": 1756813511.687936,
+      "updated_at": 1756813511.687936
+    },
+    {
+      "id": "a4c453ab-295e-4070-bcd1-5cfea803509f",
+      "company_id": "e56ce170-ae07-4bbf-81f1-559feb2738fe",
+      "content": "To get started, simply contact us for a free consultation. We will discuss your specific needs, timeline, and budget. Most projects begin within 1-2 weeks of the initial consultation.",
+      "source": "onboarding_info",
+      "category": "getting_started",
+      "metadata": {
+        "enhanced_processing": true,
+        "quality_score": 0.9
+      },
+      "created_at": 1756813511.6883929,
+      "updated_at": 1756813511.6883929
     }
   ]
 }

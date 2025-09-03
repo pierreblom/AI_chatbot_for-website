@@ -19,12 +19,12 @@ chatbot/
 │   ├── start_admin_only.py # Admin startup script
 │   ├── start_admin_system.py # Full system startup
 │   └── documentation files # Training and system docs
-├── 📁 client_manager/       # Client management, admin dashboard, and UI
+├── 📁 admin_dashboard/      # Admin dashboard and management tools
 │   ├── admin_dashboard.py  # Main admin dashboard
 │   ├── client_management.py # Client account management
 │   ├── enhanced_app.py     # Enhanced client features
 │   ├── dashboard.html      # Dashboard UI
-│   └── data/              # Client-specific data storage
+│   └── README_CLIENT_SYSTEM.md # Client system documentation
 ├── 📁 data/                # All data storage and databases
 │   ├── knowledge/         # Per-client knowledge storage
 │   ├── sessions.csv       # Chat sessions

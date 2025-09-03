@@ -12,9 +12,11 @@ lxml==6.0.0
 nltk==3.8.1
 textstat==0.7.4
 
-# AI/ML for embeddings
+# AI/ML for embeddings and LLM integration
 langchain-community==0.3.19
 langchain-core>=0.3.41
+openai==1.51.0
+anthropic==0.34.0
 
 # Data processing
 pandas==2.2.3

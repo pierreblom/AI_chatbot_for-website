@@ -62,6 +62,20 @@ class Config:
                 "system_prompt": "You are a helpful company assistant. Only answer questions using the provided company information. If you don't have information about something, politely say so and suggest contacting the company directly.",
                 "fallback_message": "I don't have information about that in my knowledge base. Please contact our company directly for assistance."
             },
+            "llm": {
+                "openai_api_key": os.environ.get('OPENAI_API_KEY'),
+                "anthropic_api_key": os.environ.get('ANTHROPIC_API_KEY'),
+                "openai_model": "gpt-3.5-turbo",
+                "anthropic_model": "claude-3-sonnet-20240229",
+                "max_tokens": 500,
+                "temperature": 0.7,
+                "clarification_threshold": 0.3
+            },
+            "vector_search": {
+                "similarity_threshold": 0.7,
+                "max_results": 5,
+                "embedding_model": "text-embedding-ada-002"
+            },
             "security": {
                 "rate_limit": {
                     "enabled": True,
@@ -162,3 +176,7 @@ class Config:
         """Check if file extension is blocked"""
         blocked_extensions = self.get('scraper.blocked_extensions', [])
         return extension.lower() in blocked_extensions
+    
+    def get_all_config(self) -> Dict[str, Any]:
+        """Get all configuration as a dictionary"""
+        return self.config

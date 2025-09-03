@@ -20,9 +20,11 @@ sys.path.append(os.path.dirname(current_dir))  # Add parent directory
 
 # Import existing modules
 from client_management import ClientManager
-from chatbot.knowledge_base import KnowledgeBase
-from chatbot.scraper import WebScraper
-from chatbot.training_pipeline import TrainingPipeline
+from chatbot.core.knowledge_base import KnowledgeBase
+from chatbot.core.scraper import WebScraper
+from chatbot.training.training_pipeline import TrainingPipeline
+from chatbot.core.chatbot_engine import ChatbotEngine
+from chatbot.core.config import Config
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +34,7 @@ app = Flask(__name__)
 app.secret_key = 'admin-dashboard-secret-key-change-in-production'
 
 # Initialize components
-client_manager = ClientManager('../data')
+client_manager = ClientManager('./data')
 knowledge_base = KnowledgeBase('../data')
 scraper = WebScraper()
 
@@ -42,7 +44,7 @@ try:
         ollama_model="nomic-embed-text",
         chunk_size=300,
         overlap=30,
-        data_dir="../data"
+        data_dir="./data"
     )
     ENHANCED_PIPELINE_AVAILABLE = True
     logger.info("Enhanced training pipeline initialized successfully")
@@ -50,6 +52,17 @@ except Exception as e:
     training_pipeline = None
     ENHANCED_PIPELINE_AVAILABLE = False
     logger.warning(f"Enhanced training pipeline not available: {e}")
+
+# Initialize enhanced chatbot engine
+try:
+    chatbot_config = Config("../chatbot/config.json")
+    chatbot = ChatbotEngine(knowledge_base, chatbot_config)
+    ENHANCED_CHATBOT_AVAILABLE = True
+    logger.info("Enhanced chatbot engine initialized successfully")
+except Exception as e:
+    chatbot = None
+    ENHANCED_CHATBOT_AVAILABLE = False
+    logger.warning(f"Enhanced chatbot engine not available: {e}")
 
 # Admin credentials (change these!)
 ADMIN_USERNAME = "admin"
@@ -3780,7 +3793,32 @@ def api_chat():
         if not client:
             return jsonify({"error": "Invalid company_id"}), 401
         
-        # Get client knowledge
+        # Use enhanced chatbot engine if available
+        if ENHANCED_CHATBOT_AVAILABLE and chatbot:
+            try:
+                # Get response from enhanced chatbot engine
+                response = chatbot.get_response(
+                    message=message,
+                    company_id=company_id,
+                    session_id=session_id
+                )
+                
+                # Log the interaction
+                client_manager.log_usage(company_id, 'chat_request', f"Q: {message[:100]}...")
+                
+                return jsonify({
+                    "response": response['message'],
+                    "company_id": company_id,
+                    "session_id": session_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "sources_used": [{"content": "Enhanced AI Response", "source": "ai_engine"}]
+                })
+                
+            except Exception as e:
+                logger.error(f"Enhanced chatbot error: {e}")
+                # Fall back to basic response
+        
+        # Fallback to basic response generation
         client_knowledge = client_manager.get_client_knowledge(company_id)
         
         if not client_knowledge:
@@ -3793,7 +3831,6 @@ def api_chat():
             })
         
         # Simple response generation based on knowledge
-        # This is a basic implementation - you can enhance it with more sophisticated NLP
         response_text = "I'm here to help you with information about our company. "
         
         # Look for relevant knowledge entries
@@ -3906,9 +3943,13 @@ def after_request(response):
     return response
 
 @app.route('/regenerate_bridges', methods=['POST'])
-@require_admin_auth
 def regenerate_bridges():
     """Regenerate JSON bridges for all clients"""
+    # Check admin authentication
+    auth_check = require_admin_auth()
+    if auth_check:
+        return auth_check
+    
     try:
         result = client_manager.regenerate_all_json_bridges()
         
