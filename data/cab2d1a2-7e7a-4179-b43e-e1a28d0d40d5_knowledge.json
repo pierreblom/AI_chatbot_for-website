@@ -1,0 +1,35 @@
+{
+  "company_id": "cab2d1a2-7e7a-4179-b43e-e1a28d0d40d5",
+  "updated_at": 1756902422.438897,
+  "total_entries": 1,
+  "knowledge": [
+    {
+      "id": "0a064a01-fba4-420b-b80f-8c230570a069",
+      "company_id": "cab2d1a2-7e7a-4179-b43e-e1a28d0d40d5",
+      "content": "ChatBotGenius – Company Profile & Pricing\n1. Company Identity and Mission\nCompany Name: ChatBotGenius\nCore Business: Professional AI chatbot development\nTechnology Stack: Next.js and Conversational AI\nMission Statement: \"Transforming digital interactions through the power of Artificial\nIntelligence.\"\nPhilosophy: Building digital presences that are truly interactive and smart.\nTarget Audience: SMBs, e-commerce, SaaS, healthcare, education, and real estate\nsectors.\nUnique Selling Propositions: Next.js specialization, Custom-Tailored Solutions,\nMeasurable Results, End-to-End Service, Multi-Industry Experience.\n2. Website Structure and User Experience\nWebsite Type: Single-Page Application (SPA)\nNavigation: Home, Services, Portfolio, About, Contact\nHomepage Flow: Hero Section, Social Proof, Value Propositions, Call-to-Action\nDesign & Aesthetics: Dark theme with vibrant green (#22C55E), modern typography\n(Inter, Geist Sans, Geist Mono), gradients, responsive design.\n3. Services Offered\n- Custom AI Chatbot Development\n- Next.js Integration & Optimization\n- Natural Language Processing (NLP)\n- User Experience (UX) Design\n- Maintenance & Support\n- AI Model Fine-tuning\n4. Pricing & Packages\nPackage One-time Fee Monthly Fee Features\nStarter $1,500 $99 Basic AI chatbot (200 FAQs), Next.js integration, Email suppGrowth $4,500 $249 Advanced chatbot (1,000 FAQs), Multi-language (2), CRM inEnterprise $12,000 $799 Bespoke chatbot, Multi-channel (Web, WhatsApp, Messenge5. Add-on Services\n- AI Model Fine-tuning: $500 per session\n- Extra Language: $350 per language\n- Custom API Integration: $1,000 per integration\n- On-site Training Workshop: $2,000/day\n6. Example Case Study\nClient: GreenLeaf E-commerce\nProblem: 40% of customer service tickets were repetitive (shipping, returns).\nSolution: Growth Package chatbot integrated with Shopify + HubSpot.\nResults: 55% reduction in support tickets, +18% cart conversion, ROI achieved in 4\nmonths.\n7. Overall Assessment\nChatBotGenius combines strong branding, measurable results, and technical excellence\nto deliver highly effective AI chatbot solutions. With specialized expertise in Next.js,\nindustry versatility, and client-focused packages, the company is well-positioned to help\nbusinesses automate, scale, and grow through intelligent digital interactions.",
+      "source": "admin",
+      "category": "",
+      "metadata": {
+        "processed_at": "1756902422.43414",
+        "word_count": 298,
+        "chunk_count": 1,
+        "quality_score": 1.0,
+        "complexity_level": "very_complex",
+        "readability_score": 14.15,
+        "topics": [
+          "chatbot",
+          "next",
+          "company",
+          "integration",
+          "language"
+        ],
+        "sentiment": "neutral",
+        "issues": [],
+        "vector_model": "nomic-embed-text",
+        "enhanced_processing": true
+      },
+      "created_at": 1756902422.43414,
+      "updated_at": 1756902422.43414
+    }
+  ]
+}

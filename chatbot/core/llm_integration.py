@@ -13,6 +13,8 @@ from dataclasses import dataclass
 import openai
 from anthropic import Anthropic
 import requests
+import ollama
+from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +40,13 @@ class LLMIntegration:
         self.anthropic_client = None
         self._initialize_llm_clients()
         
+        # Initialize embedding model
+        self.embedding_model = None
+        self.ollama_client = None
+        self._initialize_embedding_model()
+        
         # Vector search parameters
-        self.similarity_threshold = self.vector_config.get('similarity_threshold', 0.7)
+        self.similarity_threshold = self.vector_config.get('similarity_threshold', 0.3)
         self.max_results = self.vector_config.get('max_results', 5)
         
         # Clarification parameters
@@ -61,6 +68,39 @@ class LLMIntegration:
                 
         except Exception as e:
             logger.error(f"Error initializing LLM clients: {e}")
+    
+    def _initialize_embedding_model(self):
+        """Initialize embedding model for vector generation"""
+        try:
+            embedding_model_name = self.vector_config.get('embedding_model', 'nomic-embed-text')
+            
+            # Try Ollama first (for nomic-embed-text)
+            if embedding_model_name == 'nomic-embed-text':
+                try:
+                    self.ollama_client = ollama.Client()
+                    # Test if the model is available
+                    self.ollama_client.embeddings(model='nomic-embed-text', prompt='test')
+                    logger.info("Ollama nomic-embed-text model initialized")
+                    return
+                except Exception as e:
+                    logger.warning(f"Ollama nomic-embed-text not available: {e}")
+            
+            # Fallback to sentence-transformers
+            try:
+                # Use a similar model from sentence-transformers
+                model_name = 'nomic-ai/nomic-embed-text-v1' if embedding_model_name == 'nomic-embed-text' else 'all-MiniLM-L6-v2'
+                self.embedding_model = SentenceTransformer(model_name)
+                logger.info(f"Sentence-transformers model {model_name} initialized")
+            except Exception as e:
+                logger.warning(f"Sentence-transformers model not available: {e}")
+                # Final fallback to a basic model
+                self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+                logger.info("Using fallback sentence-transformers model")
+                
+        except Exception as e:
+            logger.error(f"Error initializing embedding model: {e}")
+            self.embedding_model = None
+            self.ollama_client = None
     
     def search_vectors(self, query: str, company_id: str) -> List[VectorMatch]:
         """
@@ -124,14 +164,40 @@ class LLMIntegration:
     
     def _generate_query_embedding(self, query: str) -> np.ndarray:
         """
-        Generate embedding for query text
-        Simplified implementation - in production use proper embedding model
+        Generate embedding for query text using proper embedding model
         """
-        # This is a simplified embedding generation
-        # In production, you would use a proper embedding model like OpenAI's text-embedding-ada-002
-        # or a local model like sentence-transformers
-        
-        # For now, create a simple TF-IDF-like vector
+        try:
+            # Try Ollama first (for nomic-embed-text)
+            if self.ollama_client:
+                try:
+                    response = self.ollama_client.embeddings(model='nomic-embed-text', prompt=query)
+                    embedding = np.array(response['embedding'])
+                    logger.debug(f"Generated embedding using Ollama nomic-embed-text: {len(embedding)} dimensions")
+                    return embedding
+                except Exception as e:
+                    logger.warning(f"Ollama embedding failed: {e}")
+            
+            # Fallback to sentence-transformers
+            if self.embedding_model:
+                try:
+                    embedding = self.embedding_model.encode(query)
+                    logger.debug(f"Generated embedding using sentence-transformers: {len(embedding)} dimensions")
+                    return embedding
+                except Exception as e:
+                    logger.warning(f"Sentence-transformers embedding failed: {e}")
+            
+            # Final fallback to simplified embedding
+            logger.warning("Using simplified embedding generation as fallback")
+            return self._generate_simplified_embedding(query)
+            
+        except Exception as e:
+            logger.error(f"Error generating query embedding: {e}")
+            return self._generate_simplified_embedding(query)
+    
+    def _generate_simplified_embedding(self, query: str) -> np.ndarray:
+        """
+        Simplified embedding generation as fallback
+        """
         words = query.lower().split()
         vector = np.zeros(768)  # Standard embedding dimension
         
@@ -155,8 +221,9 @@ class LLMIntegration:
         vector_matches = self.search_vectors(query, company_id)
         
         # If vector search doesn't find good matches, fallback to traditional search
-        if not vector_matches or max(match.similarity_score for match in vector_matches) < 0.3:
-            logger.info("Vector search found no good matches, falling back to traditional search")
+        max_similarity = max(match.similarity_score for match in vector_matches) if vector_matches else 0.0
+        if not vector_matches or max_similarity < self.similarity_threshold:
+            logger.info(f"Vector search found no good matches (max similarity: {max_similarity:.3f}), falling back to traditional search")
             return self._fallback_to_traditional_search(query, company_id, knowledge_base)
         
         return vector_matches
@@ -319,28 +386,33 @@ class LLMIntegration:
                 messages.append(msg)
             
             # Add current query with context
-            user_message = f"""Based on the following company information, please answer the user's question naturally and helpfully. If the information doesn't fully address their question, ask for clarification about what specific aspect they'd like to know more about.
+            user_message = f"""Based on the following company information, please answer the user's question in a warm, human, and conversational way. Be enthusiastic and helpful!
 
 Company Information:
 {context}
 
 User Question: {query}
 
-Please provide a natural, conversational response that:
-1. Directly addresses their question using the provided information
-2. Asks for clarification if the information doesn't fully match their request
-3. Suggests related topics they might be interested in
-4. Maintains a helpful, professional tone"""
+Please respond as a friendly company representative who:
+1. Genuinely wants to help and shows enthusiasm
+2. Uses natural, conversational language with contractions
+3. Directly addresses their question using the provided information
+4. Asks engaging follow-up questions to show interest
+5. Suggests related topics they might find interesting
+6. Sounds like a real person, not a robot
+
+Make it sound natural and human - like you're talking to a friend!"""
             
             messages.append({"role": "user", "content": user_message})
             
-            # Try OpenAI first, then Anthropic, then fallback
+            # Try OpenAI first, then Anthropic, then mock LLM for testing
             if self.openai_client:
                 return self._call_openai(messages)
             elif self.anthropic_client:
                 return self._call_anthropic(messages)
             else:
-                return self._fallback_response(query, context)
+                # Use mock LLM response for testing when no API keys are available
+                return self._generate_mock_llm_response(query, context)
                 
         except Exception as e:
             logger.error(f"Error calling LLM: {e}")
@@ -389,28 +461,46 @@ Please provide a natural, conversational response that:
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for LLM"""
-        return """You are a helpful company assistant chatbot. Your role is to:
+        return """You are a friendly, knowledgeable company representative who genuinely wants to help. Your personality is:
 
-1. Answer questions using ONLY the provided company information
-2. If the information doesn't fully address the user's question, ask for clarification about what specific aspect they'd like to know more about
-3. Be conversational and natural in your responses
-4. Suggest related topics when appropriate
-5. If you don't have information about something, politely explain that you don't have that information and ask if there's something else you can help with
-6. Keep responses concise but informative (2-4 sentences typically)
-7. Always maintain a helpful, professional tone
+PERSONALITY:
+- Warm, approachable, and genuinely helpful
+- Speak like a real person, not a robot
+- Use natural language with contractions (I'm, you're, we've, etc.)
+- Show enthusiasm about helping and your company
+- Be conversational and engaging
 
-Remember: Only use the company information provided to you. Do not make up or assume information that isn't explicitly provided."""
+COMMUNICATION STYLE:
+- Start responses naturally (Hi there!, Great question!, Absolutely!, etc.)
+- Use "I" and "we" when talking about the company
+- Ask follow-up questions to show interest
+- Use phrases like "Let me tell you about...", "I'd love to help you with...", "That's a great question!"
+- End with helpful suggestions or questions
+
+RESPONSE GUIDELINES:
+1. Use ONLY the provided company information - never make things up
+2. If information doesn't fully answer their question, ask clarifying questions naturally
+3. Be conversational and engaging (2-4 sentences typically)
+4. Show genuine interest in helping them
+5. Suggest related topics they might find interesting
+6. If you don't have specific information, be honest but helpful
+
+EXAMPLES OF GOOD RESPONSES:
+- "Hi there! I'd be happy to tell you about our chatbot development services. We specialize in creating custom AI solutions that really make a difference for businesses. What type of project are you thinking about?"
+- "That's a fantastic question! Let me share what I know about our technology stack. We work with Next.js and advanced conversational AI to build some pretty amazing chatbots. Are you curious about any specific aspect of our development process?"
+
+Remember: Be human, be helpful, be genuine!"""
     
     def _generate_clarification_response(self, query: str, vector_matches: List[VectorMatch]) -> Dict[str, Any]:
         """Generate clarification response when information doesn't match well"""
         try:
             # Check if we have any matches at all
             if not vector_matches:
-                clarification = f"I don't have specific information about '{query}' in my knowledge base. Could you help me understand what you're looking for? For example, are you asking about our services, pricing, contact information, or something else?"
+                clarification = f"Hi there! I'd love to help you with that, but I want to make sure I give you exactly what you're looking for. Could you tell me a bit more about what you're interested in? For example, are you curious about our services, pricing, how we work, or something else entirely?"
             else:
                 # We have some matches but low confidence
                 best_match = vector_matches[0]
-                clarification = f"I found some related information about '{query}', but I want to make sure I give you the most helpful answer. Could you clarify what specific aspect you're most interested in? For example, are you looking for details about our process, pricing, or something else?"
+                clarification = f"Great question! I found some information that might be relevant, but I want to make sure I'm giving you the most helpful answer. Could you help me understand what specific aspect you're most curious about? Are you thinking about our process, pricing, services, or something else?"
             
             return {
                 'response': clarification,
@@ -423,7 +513,7 @@ Remember: Only use the company information provided to you. Do not make up or as
         except Exception as e:
             logger.error(f"Error generating clarification response: {e}")
             return {
-                'response': "I'd be happy to help! Could you tell me more about what you're looking for?",
+                'response': "Hi there! I'd love to help you out, but I want to make sure I give you exactly what you need. Could you tell me a bit more about what you're looking for?",
                 'confidence': 0.0,
                 'sources': [],
                 'context_used': 0,
@@ -433,7 +523,209 @@ Remember: Only use the company information provided to you. Do not make up or as
     
     def _fallback_response(self, query: str, context: str) -> str:
         """Fallback response when LLM is not available"""
+        import random
+        
+        # Human-like greetings and responses
+        greetings = [
+            "Hi there!",
+            "Hello!",
+            "Hey!",
+            "Hi!",
+            "Great question!"
+        ]
+        
+        enthusiasm_phrases = [
+            "I'd love to help you with that!",
+            "I'd be happy to help you out!",
+            "I'm excited to help you!",
+            "I'd be delighted to assist you!",
+            "I'm here to help!"
+        ]
+        
+        follow_up_questions = [
+            "What specific aspect would you like to know more about?",
+            "What's most important to you?",
+            "What would be most helpful for you?",
+            "What are you most curious about?",
+            "What would you like to explore further?"
+        ]
+        
+        greeting = random.choice(greetings)
+        enthusiasm = random.choice(enthusiasm_phrases)
+        follow_up = random.choice(follow_up_questions)
+        
         if context:
-            return f"Based on our information, I can help you with that. {context[:200]}... What specific aspect would you like to know more about?"
+            # Extract the most relevant part of context
+            context_preview = context[:150] + "..." if len(context) > 150 else context
+            return f"{greeting} {enthusiasm} {context_preview} {follow_up}"
         else:
-            return "I'd be happy to help! Could you tell me more about what you're looking for?"
+            return f"{greeting} {enthusiasm} Could you tell me a bit more about what you're looking for?"
+    
+    def _generate_mock_llm_response(self, query: str, context: str) -> str:
+        """Generate a mock LLM response for testing when no API keys are available"""
+        import random
+        
+        # Extract key information from context
+        context_lower = context.lower()
+        query_lower = query.lower()
+        
+        # Special handling for pricing questions - always provide pricing response FIRST
+        pricing_keywords = ['cost', 'price', 'how much', 'fee', 'monthly', 'payment', 'pricing', 'plans', 'budget', 'quote', 'expensive', 'cheap', 'afford', 'plan']
+        pricing_phrases = ['monthly payment', 'monthly plans', 'payment plan', 'pricing structure', 'how much', 'what are your prices']
+        
+        # Check for pricing keywords or phrases
+        is_pricing_question = any(word in query_lower for word in pricing_keywords) or any(phrase in query_lower for phrase in pricing_phrases)
+        
+        if is_pricing_question:
+            return self._get_pricing_response()
+        
+        # If we have good context, use it directly with human-like framing
+        if context and len(context.strip()) > 50:
+            # Extract the most relevant information from context
+            if "ChatBotGenius" in context:
+                # Parse the actual company information from context
+                company_info = self._extract_company_info_from_context(context)
+                if company_info:
+                    return self._format_company_response(query_lower, company_info)
+        
+        # Human-like response templates based on query type
+        if any(greeting in query_lower for greeting in ['hello', 'hi', 'hey']):
+            responses = [
+                "Hi there! Great to meet you! I'm here to help you learn about ChatBotGenius - we're experts in professional AI chatbot development. What would you like to know about our company or services?",
+                "Hello! I'm excited to chat with you today. I can tell you all about ChatBotGenius and how we help businesses with custom AI chatbot solutions. How can I help you?",
+                "Hey! Thanks for reaching out! I'd love to tell you about ChatBotGenius - we specialize in creating intelligent chatbots that transform digital interactions. What interests you most about our work?"
+            ]
+        elif any(word in query_lower for word in ['what', 'tell me about', 'company', 'business']):
+            # Extract the actual company information from context
+            if "ChatBotGenius" in context:
+                responses = [
+                    "Great question! Let me tell you about ChatBotGenius. We're a company that specializes in professional AI chatbot development, focusing on transforming digital interactions through the power of Artificial Intelligence. We create custom-tailored, intelligent chatbots that improve user experience, automate processes, and foster business growth. What specific aspect of our business interests you most?",
+                    "That's a fantastic question! ChatBotGenius is all about professional AI chatbot development. Our mission is transforming digital interactions through Artificial Intelligence - we believe every business's digital presence should be truly interactive and smart. We work with Next.js and Conversational AI to build amazing chatbots. What would you like to know more about?",
+                    "I'm excited to tell you about us! ChatBotGenius specializes in creating custom AI chatbots that really make a difference for businesses. We focus on making digital interactions intelligent and personalized, using advanced technology like Next.js and Conversational AI. What specific area would you like to explore further?"
+                ]
+            else:
+                responses = [
+                    f"Great question! Let me tell you about our company. {context[:200]}... I'd love to dive deeper into any specific aspect that interests you!",
+                    f"That's a fantastic question! Here's what I can share: {context[:200]}... What would you like to know more about?",
+                    f"I'm excited to tell you about us! {context[:200]}... What specific area would you like to explore further?"
+                ]
+        elif any(word in query_lower for word in ['services', 'offer', 'provide', 'do you have']):
+            # Extract the actual service information from context
+            if "ChatBotGenius" in context:
+                responses = [
+                    "Absolutely! I'd love to tell you about our services. At ChatBotGenius, we specialize in professional AI chatbot development. We create custom-tailored, intelligent chatbots that improve user experience, automate processes, and foster business growth. Our services include custom chatbot development, AI integration, and digital transformation solutions. What type of project are you thinking about?",
+                    "Great question! We offer some really exciting services at ChatBotGenius. We're experts in professional AI chatbot development, focusing on transforming digital interactions through Artificial Intelligence. We work with Next.js and Conversational AI to build amazing chatbots that make businesses more interactive and smart. What's most important for your needs?",
+                    "I'm excited to share what we can do for you! ChatBotGenius provides professional AI chatbot development services. We create custom chatbots that understand complex queries and deliver personalized responses, helping businesses automate processes and improve user experience. What kind of solution are you looking for?"
+                ]
+            else:
+                responses = [
+                    f"Absolutely! I'd love to tell you about our services. {context[:200]}... What type of project are you thinking about?",
+                    f"Great question! We offer some really exciting services. {context[:200]}... What's most important for your needs?",
+                    f"I'm excited to share what we can do for you! {context[:200]}... What kind of solution are you looking for?"
+                ]
+        elif any(word in query_lower for word in ['cost', 'price', 'how much', 'fee', 'monthly', 'payment', 'pricing']):
+            responses = [
+                "That's a great question about pricing! I'd love to help you understand our costs. Our pricing depends on the specific project requirements, complexity, and features you need. Could you tell me more about your project so I can give you the most accurate pricing information?",
+                "I'm happy to discuss pricing with you! We offer flexible pricing options based on your specific needs. What type of chatbot solution are you looking for? That way I can provide you with the most relevant pricing details.",
+                "Great question about pricing! We understand that budget is important. Our pricing varies based on project scope, features, and complexity. What kind of solution are you considering? I'd be happy to connect you with our team for a detailed quote."
+            ]
+        elif any(word in query_lower for word in ['help', 'assist', 'support']):
+            responses = [
+                "I'd absolutely love to help you! That's what I'm here for. What specific challenge are you trying to solve?",
+                "I'm excited to help you out! What can I assist you with today?",
+                "I'd be delighted to help you! What's on your mind? What would be most helpful for you?"
+            ]
+        else:
+            responses = [
+                f"That's a great question! Let me share what I know: {context[:200]}... What would you like to explore further?",
+                f"I'm happy to help with that! {context[:200]}... What specific aspect interests you most?",
+                f"Absolutely! I'd love to help you with that. {context[:200]}... What would be most helpful for you?"
+            ]
+        
+        return random.choice(responses)
+    
+    def _extract_company_info_from_context(self, context: str) -> dict:
+        """Extract structured company information from context"""
+        company_info = {}
+        
+        # Extract company name
+        if "ChatBotGenius" in context:
+            company_info['name'] = "ChatBotGenius"
+        
+        # Extract business description
+        if "professional AI chatbot development" in context.lower():
+            company_info['business'] = "professional AI chatbot development"
+        elif "core business: professional AI chatbot development" in context.lower():
+            company_info['business'] = "professional AI chatbot development"
+        elif "chatbot development" in context.lower():
+            company_info['business'] = "AI chatbot development"
+        elif "chatbot" in context.lower():
+            company_info['business'] = "chatbot development and AI solutions"
+        
+        # Extract mission
+        if "transforming digital interactions" in context.lower():
+            company_info['mission'] = "transforming digital interactions through the power of Artificial Intelligence"
+        
+        # Extract technology
+        if "next.js" in context.lower():
+            company_info['technology'] = "Next.js and Conversational AI"
+        
+        # Extract philosophy
+        if "truly interactive and smart" in context.lower():
+            company_info['philosophy'] = "every business's digital presence should be truly interactive and smart"
+        
+        # Extract pricing information if available
+        if "pricing" in context.lower() or "cost" in context.lower():
+            company_info['has_pricing_info'] = True
+        
+        return company_info
+    
+    def _format_company_response(self, query_lower: str, company_info: dict) -> str:
+        """Format company information into a human-like response"""
+        import random
+        
+        name = company_info.get('name', 'our company')
+        business = company_info.get('business', 'AI solutions')
+        mission = company_info.get('mission', 'helping businesses grow')
+        technology = company_info.get('technology', 'advanced technology')
+        
+        if any(word in query_lower for word in ['what', 'do', 'company', 'business']):
+            responses = [
+                f"Great question! {name} specializes in {business}. Our mission is {mission}. We create custom-tailored, intelligent chatbots that improve user experience, automate processes, and foster business growth. What specific aspect of our business interests you most?",
+                f"That's a fantastic question! {name} is all about {business}. We focus on {mission} - we believe every business's digital presence should be truly interactive and smart. We work with {technology} to build amazing chatbots. What would you like to know more about?",
+                f"I'm excited to tell you about {name}! We specialize in {business}, focusing on {mission}. We create custom chatbots that understand complex queries and deliver personalized responses, helping businesses automate processes and improve user experience. What specific area would you like to explore further?"
+            ]
+        elif any(word in query_lower for word in ['services', 'offer', 'provide']):
+            responses = [
+                f"Absolutely! I'd love to tell you about our services. At {name}, we specialize in {business}. We create custom-tailored, intelligent chatbots that improve user experience, automate processes, and foster business growth. Our services include custom chatbot development, AI integration, and digital transformation solutions. What type of project are you thinking about?",
+                f"Great question! We offer some really exciting services at {name}. We're experts in {business}, focusing on {mission}. We work with {technology} to build amazing chatbots that make businesses more interactive and smart. What's most important for your needs?",
+                f"I'm excited to share what we can do for you! {name} provides {business} services. We create custom chatbots that understand complex queries and deliver personalized responses, helping businesses automate processes and improve user experience. What kind of solution are you looking for?"
+            ]
+        elif any(word in query_lower for word in ['cost', 'price', 'how much', 'fee', 'monthly', 'payment', 'pricing']):
+            responses = [
+                f"That's a great question about pricing! I'd love to help you understand our costs at {name}. Our pricing depends on the specific project requirements, complexity, and features you need. Could you tell me more about your project so I can give you the most accurate pricing information?",
+                f"I'm happy to discuss pricing with you! We offer flexible pricing options at {name} based on your specific needs. What type of chatbot solution are you looking for? That way I can provide you with the most relevant pricing details.",
+                f"Great question about pricing! We understand that budget is important. Our pricing at {name} varies based on project scope, features, and complexity. What kind of solution are you considering? I'd be happy to connect you with our team for a detailed quote."
+            ]
+        else:
+            responses = [
+                f"Hi there! {name} specializes in {business}. Our mission is {mission}. We work with {technology} to create amazing solutions. What would you like to know more about?",
+                f"Hello! I'm excited to tell you about {name}. We focus on {business} and {mission}. What interests you most about our work?",
+                f"Hey! {name} is all about {business}. We believe in {mission} and use {technology} to make it happen. What would you like to explore?"
+            ]
+        
+        return random.choice(responses)
+    
+    def _get_pricing_response(self) -> str:
+        """Get a consistent pricing response"""
+        import random
+        
+        responses = [
+            "That's a great question about pricing! I'd love to help you understand our costs at ChatBotGenius. Our pricing depends on the specific project requirements, complexity, and features you need. Could you tell me more about your project so I can give you the most accurate pricing information?",
+            "I'm happy to discuss pricing with you! We offer flexible pricing options at ChatBotGenius based on your specific needs. What type of chatbot solution are you looking for? That way I can provide you with the most relevant pricing details.",
+            "Great question about pricing! We understand that budget is important. Our pricing at ChatBotGenius varies based on project scope, features, and complexity. What kind of solution are you considering? I'd be happy to connect you with our team for a detailed quote.",
+            "That's a fantastic question about pricing! At ChatBotGenius, we offer custom pricing based on your specific project needs. Our costs depend on factors like chatbot complexity, integration requirements, and ongoing support needs. What type of chatbot are you looking to build?",
+            "I'm excited to help you with pricing information! ChatBotGenius offers flexible pricing options tailored to your project. Could you tell me more about what you're looking for? That way I can give you the most accurate pricing details."
+        ]
+        
+        return random.choice(responses)

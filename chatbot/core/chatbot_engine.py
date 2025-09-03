@@ -49,7 +49,7 @@ class ChatbotEngine:
             "You are a helpful company assistant. Only answer questions using the provided company information.")
         
         self.fallback_message = self.chatbot_config.get('fallback_message',
-            "I don't have information about that in my knowledge base. Please contact our company directly for assistance.")
+            "Hi there! I'd love to help you with that, but I don't have that specific information in my knowledge base. I'd be happy to connect you with someone who can give you a more detailed answer!")
     
     def get_response(self, message: str, company_id: str, session_id: str = "default") -> Dict[str, Any]:
         """
@@ -110,7 +110,7 @@ class ChatbotEngine:
         except Exception as e:
             logger.error(f"Error generating response: {e}")
             return {
-                "message": "I'm sorry, I'm having trouble processing your request right now. Please try again.",
+                "message": "Hi there! I'm having a bit of trouble processing your request right now. Could you try asking me again? I'd love to help you out!",
                 "sources": [],
                 "knowledge_used": 0,
                 "session_id": session_id,

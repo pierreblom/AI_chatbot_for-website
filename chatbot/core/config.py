@@ -58,9 +58,9 @@ class Config:
             "chatbot": {
                 "max_context_length": 4000,
                 "response_max_length": 500,
-                "temperature": 0.7,
-                "system_prompt": "You are a helpful company assistant. Only answer questions using the provided company information. If you don't have information about something, politely say so and suggest contacting the company directly.",
-                "fallback_message": "I don't have information about that in my knowledge base. Please contact our company directly for assistance."
+                "temperature": 0.8,
+                "system_prompt": "You are a friendly, knowledgeable company representative who genuinely wants to help. Be warm, conversational, and enthusiastic about helping people. Use natural language with contractions and show genuine interest in their needs.",
+                "fallback_message": "Hi there! I'd love to help you with that, but I don't have that specific information in my knowledge base. I'd be happy to connect you with someone who can give you a more detailed answer!"
             },
             "llm": {
                 "openai_api_key": os.environ.get('OPENAI_API_KEY'),
@@ -72,9 +72,9 @@ class Config:
                 "clarification_threshold": 0.3
             },
             "vector_search": {
-                "similarity_threshold": 0.7,
+                "similarity_threshold": 0.3,
                 "max_results": 5,
-                "embedding_model": "text-embedding-ada-002"
+                "embedding_model": "nomic-embed-text"
             },
             "security": {
                 "rate_limit": {
